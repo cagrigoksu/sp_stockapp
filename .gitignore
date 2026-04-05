@@ -1,0 +1,3 @@
+.DS_Store
+backend/stock.db
+**/__pycache__
