@@ -79,7 +79,7 @@ def init_db():
         if not admin:
             h = generate_password_hash('Admin1234!')
             db.execute(
-                "INSERT INTO users(email,full_name,password_hash,is_admin,must_change_password) VALUES(?,?,?,1,0)",
+                "INSERT INTO users(email,full_name,password_hash,is_admin,must_change_password) VALUES(?,?,?,1,1)",
                 ('admin@stockapp.com', 'Administrator', h)
             )
             db.commit()

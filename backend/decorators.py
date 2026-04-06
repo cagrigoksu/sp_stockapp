@@ -1,23 +1,20 @@
 from functools import wraps
-from flask import session, redirect, url_for, flash
-
+from flask import session, jsonify
 
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
+            return jsonify({'error': 'Unauthorized'}), 401
         return f(*args, **kwargs)
     return decorated
-
 
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
+            return jsonify({'error': 'Unauthorized'}), 401
         if not session.get('is_admin'):
-            flash('Admin access required.', 'danger')
-            return redirect(url_for('dashboard.dashboard'))
+            return jsonify({'error': 'Admin access required.'}), 403
         return f(*args, **kwargs)
     return decorated
