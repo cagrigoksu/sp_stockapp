@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage'
 import ChangePasswordFirstPage from './pages/ChangePasswordFirstPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import DashboardPage from './pages/DashboardPage'
+import StockPage from './pages/StockPage'
+import CountPage from './pages/CountPage'
 
 export default function App() {
   return (
@@ -20,6 +22,12 @@ export default function App() {
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute><DashboardPage /></ProtectedRoute>
+          } />
+          <Route path="/stock" element={
+            <ProtectedRoute><StockPage /></ProtectedRoute>
+          } />
+          <Route path="/count" element={
+            <ProtectedRoute><CountPage /></ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
