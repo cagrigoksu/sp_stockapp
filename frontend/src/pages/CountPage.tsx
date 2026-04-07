@@ -151,7 +151,7 @@ function ScanResult({ result, barcode }: { result: ValidateResult; barcode: stri
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function CountPage() {
+export default function CountPage({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -217,19 +217,21 @@ export default function CountPage() {
   }
 
   return (
-    <div style={page}>
-      {/* Nav */}
-      <nav style={nav}>
-        <span style={brand}>StockApp</span>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button style={navBtn} onClick={() => navigate('/stock')}>📦 Stock</button>
-          <button style={{ ...navBtn, background: 'rgba(255,255,255,0.15)' }}>📋 Count</button>
-          <span style={navDivider} />
-          <span style={navUser}>{user?.user_name}</span>
-          <button style={navBtn} onClick={() => navigate('/change-password')}>Change Password</button>
-          <button style={navBtn} onClick={handleLogout}>Logout</button>
-        </div>
-      </nav>
+    <div style={embedded ? embeddedPage : page}>
+      {/* Nav — hidden when rendered inside DashboardPage */}
+      {!embedded && (
+        <nav style={nav}>
+          <span style={brand}>StockApp</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button style={navBtn} onClick={() => navigate('/stock')}>📦 Stock</button>
+            <button style={{ ...navBtn, background: 'rgba(255,255,255,0.15)' }}>📋 Count</button>
+            <span style={navDivider} />
+            <span style={navUser}>{user?.user_name}</span>
+            <button style={navBtn} onClick={() => navigate('/change-password')}>Change Password</button>
+            <button style={navBtn} onClick={handleLogout}>Logout</button>
+          </div>
+        </nav>
+      )}
 
       {showNewSession && (
         <NewSessionModal
@@ -310,6 +312,7 @@ export default function CountPage() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const page: React.CSSProperties = { minHeight: '100vh', background: '#f0f4f8' }
+const embeddedPage: React.CSSProperties = { background: '#f0f4f8' }
 
 const nav: React.CSSProperties = {
   background: '#1a237e', padding: '0.75rem 2rem',

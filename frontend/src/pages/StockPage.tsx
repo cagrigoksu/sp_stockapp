@@ -683,7 +683,7 @@ function CablesTab({ onCsvImport }: { onCsvImport: () => void }) {
 
 type Tab = 'devices' | 'chargers' | 'cables'
 
-export default function StockPage() {
+export default function StockPage({ embedded = false }: { embedded?: boolean }) {
   const [tab, setTab] = useState<Tab>('devices')
   const [showCsvImport, setShowCsvImport] = useState(false)
 

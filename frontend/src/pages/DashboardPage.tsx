@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import client from '../api/client'
+import StockPage from './StockPage'
+import CountPage from './CountPage'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -24,25 +26,27 @@ interface Stats {
   phonesNotEngraved: number
   tabletsEngraved: number
   tabletsNotEngraved: number
-  iosEngravdPhones: number
-  androidEngravdPhones: number
-  ipadosEngravdTablets: number
-  androidEngravdTablets: number
+  iosEngravedPhones: number
+  iosNotEngravedPhones: number
+  androidEngravedPhones: number
+  androidNotEngravedPhones: number
+  ipadosEngravedTablets: number
+  androidEngravedTablets: number
+  ipadosNotEngravedTablets: number
+  androidNotEngravedTablets: number
 }
 
-// iOS = Apple brand, everything else = Android/other
 const isApple = (brand: string) => brand.trim().toLowerCase() === 'apple'
 
 function computeStats(devices: Device[]): Stats {
   const phones = devices.filter(d => d.device_type === 'phone')
   const tablets = devices.filter(d => d.device_type === 'tablet')
-
   const phonesEngraved = phones.filter(d => d.is_engraved).length
   const tabletsEngraved = tablets.filter(d => d.is_engraved).length
-
-  const engravdPhones = phones.filter(d => d.is_engraved)
-  const engravdTablets = tablets.filter(d => d.is_engraved)
-
+  const EngravedPhones = phones.filter(d => d.is_engraved)
+  const EngravedTablets = tablets.filter(d => d.is_engraved)
+  const NotEngravedPhones = phones.filter(d => !d.is_engraved)
+  const NotEngravedTablets = tablets.filter(d => !d.is_engraved)
   return {
     phones: phones.length,
     tablets: tablets.length,
@@ -50,32 +54,32 @@ function computeStats(devices: Device[]): Stats {
     phonesNotEngraved: phones.length - phonesEngraved,
     tabletsEngraved,
     tabletsNotEngraved: tablets.length - tabletsEngraved,
-    iosEngravdPhones: engravdPhones.filter(d => isApple(d.brand)).length,
-    androidEngravdPhones: engravdPhones.filter(d => !isApple(d.brand)).length,
-    ipadosEngravdTablets: engravdTablets.filter(d => isApple(d.brand)).length,
-    androidEngravdTablets: engravdTablets.filter(d => !isApple(d.brand)).length,
+
+    iosEngravedPhones: EngravedPhones.filter(d => isApple(d.brand)).length,
+    androidEngravedPhones: EngravedPhones.filter(d => !isApple(d.brand)).length,
+    ipadosEngravedTablets: EngravedTablets.filter(d => isApple(d.brand)).length,
+    androidEngravedTablets: EngravedTablets.filter(d => !isApple(d.brand)).length,
+
+    iosNotEngravedPhones: NotEngravedPhones.filter(d => isApple(d.brand)).length,
+    androidNotEngravedPhones: NotEngravedPhones.filter(d => !isApple(d.brand)).length,
+    ipadosNotEngravedTablets: NotEngravedTablets.filter(d => isApple(d.brand)).length,
+    androidNotEngravedTablets: NotEngravedTablets.filter(d => !isApple(d.brand)).length,
   }
 }
 
 // ─── Bar component ────────────────────────────────────────────────────────────
 
 interface BarRowProps {
-  labelA: string
-  colorA: string
-  countA: number
-  labelB: string
-  colorB: string
-  countB: number
+  labelA: string; colorA: string; countA: number
+  labelB: string; colorB: string; countB: number
 }
 
 function CompareBar({ labelA, colorA, countA, labelB, colorB, countB }: BarRowProps) {
   const total = countA + countB
   const pctA = total === 0 ? 50 : Math.round((countA / total) * 100)
   const pctB = 100 - pctA
-
   return (
     <div style={{ marginBottom: '1rem' }}>
-      {/* Labels + counts */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ ...dot, background: colorA }} />
@@ -88,7 +92,6 @@ function CompareBar({ labelA, colorA, countA, labelB, colorB, countB }: BarRowPr
           <span style={{ ...dot, background: colorB }} />
         </div>
       </div>
-      {/* Bar */}
       <div style={barTrack}>
         {total === 0 ? (
           <div style={{ ...barFill, width: '100%', background: '#e0e0e0', borderRadius: 6 }} />
@@ -99,7 +102,6 @@ function CompareBar({ labelA, colorA, countA, labelB, colorB, countB }: BarRowPr
           </>
         )}
       </div>
-      {/* Pct labels */}
       {total > 0 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
           <span style={pctLabel}>{pctA}%</span>
@@ -122,6 +124,10 @@ function StatCard({ title, children, loading }: { title: string; children: React
   )
 }
 
+// ─── Tab type ─────────────────────────────────────────────────────────────────
+
+type DashTab = 'overview' | 'devices' | 'count'
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -129,6 +135,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<DashTab>('overview')
 
   useEffect(() => {
     client.get('/api/stock')
@@ -146,11 +153,10 @@ export default function DashboardPage() {
 
   return (
     <div style={page}>
+      {/* ── Nav ── */}
       <nav style={nav}>
         <span style={brand}>StockApp</span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button style={navBtn} onClick={() => navigate('/stock')}>📦 Stock</button>
-          <button style={navBtn} onClick={() => navigate('/count')}>📋 Count</button>
           <span style={divider} />
           <span style={userName}>{user?.user_name}</span>
           <button style={navBtn} onClick={() => navigate('/change-password')}>Change Password</button>
@@ -158,109 +164,152 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <div style={body}>
-        <h2 style={heading}>Dashboard</h2>
-        <p style={{ color: '#666', marginBottom: '1.75rem' }}>
-          Welcome back, <strong>{user?.user_name}</strong>.
-        </p>
-
-        {/* ── Quick nav cards ── */}
-        <div style={quickGrid}>
-          {[
-            { label: 'Devices', icon: '📱', path: '/stock' },
-            { label: 'Stock Count', icon: '📋', path: '/count' },
-          ].map(s => (
-            <div key={s.label} style={quickCard} onClick={() => navigate(s.path)}>
-              <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>{s.icon}</div>
-              <div style={{ fontWeight: 600, color: '#1a237e', fontSize: '0.95rem' }}>{s.label}</div>
-              <div style={{ color: '#aaa', fontSize: '0.8rem', marginTop: 2 }}>View & manage →</div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Stats section ── */}
-        <h3 style={sectionHeading}>Device Overview</h3>
-        <div style={statsGrid}>
-
-          {/* 1 phones vs tablets */}
-          <StatCard title="Phones vs Tablets" loading={loading}>
-            <div style={totalRow}>
-              <span style={{ ...bigNum, color: '#1565c0' }}>{s.phones}</span>
-              <span style={totalLabel}>phones</span>
-              <span style={vsText}>vs</span>
-              <span style={{ ...bigNum, color: '#6a1b9a' }}>{s.tablets}</span>
-              <span style={totalLabel}>tablets</span>
-            </div>
-            <CompareBar
-              labelA="Phones" colorA="#1565c0" countA={s.phones}
-              labelB="Tablets" colorB="#6a1b9a" countB={s.tablets}
-            />
-          </StatCard>
-
-          {/* 2 phone engraved */}
-          <StatCard title="Engraved Phones" loading={loading}>
-            <div style={totalRow}>
-              <span style={{ ...bigNum, color: '#2e7d32' }}>{s.phonesEngraved}</span>
-              <span style={totalLabel}>engraved</span>
-              <span style={vsText}>vs</span>
-              <span style={{ ...bigNum, color: '#888' }}>{s.phonesNotEngraved}</span>
-              <span style={totalLabel}>not engraved</span>
-            </div>
-            <CompareBar
-              labelA="Engraved" colorA="#2e7d32" countA={s.phonesEngraved}
-              labelB="Not engraved" colorB="#bdbdbd" countB={s.phonesNotEngraved}
-            />
-          </StatCard>
-
-          {/* 3 tablet engraved */}
-          <StatCard title="Engraved Tablets" loading={loading}>
-            <div style={totalRow}>
-              <span style={{ ...bigNum, color: '#2e7d32' }}>{s.tabletsEngraved}</span>
-              <span style={totalLabel}>engraved</span>
-              <span style={vsText}>vs</span>
-              <span style={{ ...bigNum, color: '#888' }}>{s.tabletsNotEngraved}</span>
-              <span style={totalLabel}>not engraved</span>
-            </div>
-            <CompareBar
-              labelA="Engraved" colorA="#2e7d32" countA={s.tabletsEngraved}
-              labelB="Not engraved" colorB="#bdbdbd" countB={s.tabletsNotEngraved}
-            />
-          </StatCard>
-
-          {/* 4 iOS vs android (engraved phones) */}
-          <StatCard title="iOS vs Android — Engraved Phones" loading={loading}>
-            <div style={totalRow}>
-              <span style={{ ...bigNum, color: '#1565c0' }}>{s.iosEngravdPhones}</span>
-              <span style={totalLabel}>iOS</span>
-              <span style={vsText}>vs</span>
-              <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravdPhones}</span>
-              <span style={totalLabel}>Android</span>
-            </div>
-            <CompareBar
-              labelA="iOS" colorA="#1565c0" countA={s.iosEngravdPhones}
-              labelB="Android" colorB="#e65100" countB={s.androidEngravdPhones}
-            />
-            <div style={hint}>Among engraved phones only · Apple brand = iOS</div>
-          </StatCard>
-
-          {/* 5  iPadOS vs android (engraved tablets) */}
-          <StatCard title="iPadOS vs Android — Engraved Tablets" loading={loading}>
-            <div style={totalRow}>
-              <span style={{ ...bigNum, color: '#1565c0' }}>{s.ipadosEngravdTablets}</span>
-              <span style={totalLabel}>iPadOS</span>
-              <span style={vsText}>vs</span>
-              <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravdTablets}</span>
-              <span style={totalLabel}>Android</span>
-            </div>
-            <CompareBar
-              labelA="iPadOS" colorA="#1565c0" countA={s.ipadosEngravdTablets}
-              labelB="Android" colorB="#e65100" countB={s.androidEngravdTablets}
-            />
-            <div style={hint}>Among engraved tablets only · Apple brand = iPadOS</div>
-          </StatCard>
-
-        </div>
+      {/* ── Tab Bar ── */}
+      <div style={tabBar}>
+        <button style={tabBtn(activeTab === 'overview')} onClick={() => setActiveTab('overview')}>
+          🏠 Dashboard
+        </button>
+        <button style={tabBtn(activeTab === 'devices')} onClick={() => setActiveTab('devices')}>
+          📦 Devices
+        </button>
+        <button style={tabBtn(activeTab === 'count')} onClick={() => setActiveTab('count')}>
+          📋 Count
+        </button>
       </div>
+
+      {/* ── Tab Content ── */}
+
+      {/* Overview tab — original dashboard content, unchanged */}
+      {activeTab === 'overview' && (
+        <div style={body}>
+          <h2 style={heading}>Dashboard</h2>
+          <p style={{ color: '#666', marginBottom: '1.75rem' }}>
+            Welcome, <strong>{user?.user_name}</strong>.
+          </p>
+
+          {/* Stats */}
+          <h3 style={sectionHeading}>Device Overview</h3>
+          <div style={statsGrid}>
+            <StatCard title="Phones vs Tablets" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.phones}</span>
+                <span style={totalLabel}>phones</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#6a1b9a' }}>{s.tablets}</span>
+                <span style={totalLabel}>tablets</span>
+              </div>
+              <CompareBar labelA="Phones" colorA="#1565c0" countA={s.phones} labelB="Tablets" colorB="#6a1b9a" countB={s.tablets} />
+            </StatCard>
+
+            <StatCard title="iOS vs Android — Phones" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.iosEngravedPhones+s.iosNotEngravedPhones}</span>
+                <span style={totalLabel}>iOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravedPhones+s.androidNotEngravedPhones}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iOS" colorA="#1565c0" countA={s.iosEngravedPhones+s.iosNotEngravedPhones} labelB="Android" colorB="#e65100" countB={s.androidEngravedPhones+s.androidNotEngravedPhones} />
+              <div style={hint}>Among all phones</div>
+            </StatCard>
+
+            <StatCard title="iOS vs Android — Tablets" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.ipadosEngravedTablets+s.ipadosNotEngravedTablets}</span>
+                <span style={totalLabel}>iOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravedTablets+s.androidNotEngravedTablets}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iOS" colorA="#1565c0" countA={s.ipadosEngravedTablets+s.ipadosNotEngravedTablets} labelB="Android" colorB="#e65100" countB={s.androidEngravedTablets+s.androidNotEngravedTablets} />
+              <div style={hint}>Among all tablets</div>
+            </StatCard>
+
+            <StatCard title="Engraved Phones" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#2e7d32' }}>{s.phonesEngraved}</span>
+                <span style={totalLabel}>engraved</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#888' }}>{s.phonesNotEngraved}</span>
+                <span style={totalLabel}>not engraved</span>
+              </div>
+              <CompareBar labelA="Engraved" colorA="#2e7d32" countA={s.phonesEngraved} labelB="Not engraved" colorB="#bdbdbd" countB={s.phonesNotEngraved} />
+            </StatCard>
+
+            <StatCard title="iOS vs Android — Engraved Phones" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.iosEngravedPhones}</span>
+                <span style={totalLabel}>iOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravedPhones}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iOS" colorA="#1565c0" countA={s.iosEngravedPhones} labelB="Android" colorB="#e65100" countB={s.androidEngravedPhones} />
+              <div style={hint}>Among engraved phones only · Apple brand = iOS</div>
+            </StatCard>
+
+            <StatCard title="iOS vs Android — Not Engraved Phones" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.iosNotEngravedPhones}</span>
+                <span style={totalLabel}>iOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidNotEngravedPhones}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iOS" colorA="#1565c0" countA={s.iosNotEngravedPhones} labelB="Android" colorB="#e65100" countB={s.androidNotEngravedPhones} />
+              <div style={hint}>Among not engraved phones only · Apple brand = iOS</div>
+            </StatCard>
+
+            <StatCard title="Engraved Tablets" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#2e7d32' }}>{s.tabletsEngraved}</span>
+                <span style={totalLabel}>engraved</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#888' }}>{s.tabletsNotEngraved}</span>
+                <span style={totalLabel}>not engraved</span>
+              </div>
+              <CompareBar labelA="Engraved" colorA="#2e7d32" countA={s.tabletsEngraved} labelB="Not engraved" colorB="#bdbdbd" countB={s.tabletsNotEngraved} />
+            </StatCard>
+
+
+
+            <StatCard title="iPadOS vs Android — Engraved Tablets" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.ipadosEngravedTablets}</span>
+                <span style={totalLabel}>iPadOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidEngravedTablets}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iPadOS" colorA="#1565c0" countA={s.ipadosEngravedTablets} labelB="Android" colorB="#e65100" countB={s.androidEngravedTablets} />
+              <div style={hint}>Among engraved tablets only · Apple brand = iPadOS</div>
+            </StatCard>
+
+            <StatCard title="iPadOS vs Android — Not Engraved Tablets" loading={loading}>
+              <div style={totalRow}>
+                <span style={{ ...bigNum, color: '#1565c0' }}>{s.ipadosNotEngravedTablets}</span>
+                <span style={totalLabel}>iPadOS</span>
+                <span style={vsText}>vs</span>
+                <span style={{ ...bigNum, color: '#e65100' }}>{s.androidNotEngravedTablets}</span>
+                <span style={totalLabel}>Android</span>
+              </div>
+              <CompareBar labelA="iPadOS" colorA="#1565c0" countA={s.ipadosNotEngravedTablets} labelB="Android" colorB="#e65100" countB={s.androidNotEngravedTablets} />
+              <div style={hint}>Among not engraved tablets only</div>
+            </StatCard>
+
+          </div>
+        </div>
+      )}
+
+      {/* Devices tab — renders StockPage content directly */}
+      {activeTab === 'devices' && (
+        <StockPage embedded />
+      )}
+
+      {/* Count tab — renders CountPage content directly */}
+      {activeTab === 'count' && (
+        <CountPage embedded />
+      )}
     </div>
   )
 }
@@ -273,6 +322,20 @@ const brand: React.CSSProperties = { color: '#fff', fontWeight: 700, fontSize: '
 const divider: React.CSSProperties = { width: 1, height: 20, background: 'rgba(255,255,255,0.3)' }
 const userName: React.CSSProperties = { color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }
 const navBtn: React.CSSProperties = { background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', borderRadius: 6, padding: '0.3rem 0.8rem', cursor: 'pointer', fontSize: '0.9rem' }
+
+const tabBar: React.CSSProperties = { display: 'flex', gap: 4, padding: '0 1.5rem', borderBottom: '2px solid #dde3ed', background: '#fff', position: 'sticky', top: 0, zIndex: 10 }
+const tabBtn = (active: boolean): React.CSSProperties => ({
+  padding: '0.65rem 1.3rem',
+  border: 'none',
+  background: 'transparent',
+  color: active ? '#1a237e' : '#777',
+  borderBottom: active ? '3px solid #1a237e' : '3px solid transparent',
+  cursor: 'pointer',
+  fontWeight: active ? 700 : 500,
+  fontSize: '0.92rem',
+  marginBottom: -2,
+  transition: 'color 0.15s',
+})
 
 const body: React.CSSProperties = { padding: '2rem' }
 const heading: React.CSSProperties = { fontWeight: 700, color: '#1a237e', marginBottom: '0.25rem', fontSize: '1.3rem' }
