@@ -2,3 +2,4 @@
 backend/stock.db
 **/__pycache__
 dataset
+frontend/package-lock.json

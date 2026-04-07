@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import client from '../api/client'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+interface Props {
+  embedded?: boolean
+}
 
 interface Device {
   id: number
@@ -319,17 +321,22 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editDevice, setEditDevice] = useState<Device | null>(null)
-  const [filters, setFilters] = useState({ barcode: '', type: '', brand: '', model: '', connector: '', status: '', place: '' })
+  const [filters, setFilters] = useState({ barcode: '', type: '', brand: '', model: '', connector: '', status: '', place: '', is_engraved: '' })
   const setFilter = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
 
   const fetchDevices = useCallback(async () => {
     setLoading(true)
     try {
-      const params = Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
+      const { is_engraved: _ie, ...serverFilters } = filters
+      const params = Object.fromEntries(Object.entries(serverFilters).filter(([, v]) => v !== ''))
       const res = await client.get('/api/stock', { params })
       setDevices(res.data.devices)
     } finally { setLoading(false) }
   }, [filters])
+
+  const visibleDevices = filters.is_engraved === ''
+    ? devices
+    : devices.filter(d => filters.is_engraved === '1' ? d.is_engraved : !d.is_engraved)
 
   useEffect(() => { fetchDevices() }, [fetchDevices])
 
@@ -360,6 +367,11 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
             <option value="">All statuses</option>
             {STATUSES.map(s => <option key={s}>{s}</option>)}
           </select>
+          <select style={filterInput} value={filters.is_engraved} onChange={e => setFilter('is_engraved', e.target.value)}>
+            <option value="">All (engraved)</option>
+            <option value="1">Engraved</option>
+            <option value="0">Not engraved</option>
+          </select>
           <input style={filterInput} placeholder="Place" value={filters.place} onChange={e => setFilter('place', e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -372,7 +384,7 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
           <table style={tbl}>
             <thead><tr>{['Barcode', 'Type', 'Brand', 'Model', 'Connector', 'Engraved', 'Status', 'Place', 'Actions'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
-              {devices.map(d => (
+              {visibleDevices.map(d => (
                 <tr key={d.id} style={tr}>
                   <td style={td}><code style={code}>{d.internal_barcode}</code></td>
                   <td style={td}><span style={badge(d.device_type === 'phone' ? '#e3f2fd' : '#f3e5f5', d.device_type === 'phone' ? '#1565c0' : '#6a1b9a')}>{d.device_type}</span></td>
@@ -394,7 +406,7 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
           </table>
         )}
       </div>
-      <div style={countLine}>{devices.length} device{devices.length !== 1 ? 's' : ''}</div>
+      <div style={countLine}>{visibleDevices.length} device{visibleDevices.length !== 1 ? 's' : ''}</div>
     </div>
   )
 }
@@ -683,7 +695,7 @@ function CablesTab({ onCsvImport }: { onCsvImport: () => void }) {
 
 type Tab = 'devices' | 'chargers' | 'cables'
 
-export default function StockPage({ embedded = false }: { embedded?: boolean }) {
+export default function StockPage({ embedded }: Props) {
   const [tab, setTab] = useState<Tab>('devices')
   const [showCsvImport, setShowCsvImport] = useState(false)
 

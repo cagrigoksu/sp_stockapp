@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import client from '../api/client'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface Session {
   id: number
   name: string
@@ -20,7 +18,6 @@ interface ValidateResult {
   item?: any
 }
 
-// ─── New Session Modal ────────────────────────────────────────────────────────
 
 function NewSessionModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState('')
@@ -149,7 +146,6 @@ function ScanResult({ result, barcode }: { result: ValidateResult; barcode: stri
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CountPage({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth()
