@@ -42,6 +42,7 @@ def process_csv(file_content, item_type, user_id):
                     barcode, dt, row['brand'].strip(), row['model'].strip(),
                     row['connector'].strip(),
                     1 if row.get('is_engraved', '').strip().lower() in ('1', 'true', 'yes') else 0,
+                    1 if row.get('is_distributed', '').strip().lower() in ('1', 'true', 'yes') else 0,
                     row.get('status', 'Good').strip(), row.get('place', '').strip(), now, user_id
                 )
                 count += 1

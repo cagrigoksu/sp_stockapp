@@ -48,6 +48,7 @@ def add_device(data, user_id):
     device_repo.create(
         barcode, device_type, data['brand'], data['model'], data['connector'],
         1 if data.get('is_engraved') else 0,
+        1 if data.get('is_distributed') else 0,
         data.get('status', 'Good'), data.get('place', ''), now, user_id
     )
     return barcode
@@ -67,6 +68,7 @@ def add_device_bulk(data, user_id):
         records.append((
             barcode, device_type, data['brand'], data['model'], data['connector'],
             1 if data.get('is_engraved') else 0,
+            1 if data.get('is_distributed') else 0,
             data.get('status', 'Good'), data.get('place', ''), now, user_id
         ))
         barcodes.append(barcode)
@@ -78,6 +80,7 @@ def update_device(item_id, data, user_id):
     device_repo.update(
         item_id, data['brand'], data['model'], data['connector'],
         1 if data.get('is_engraved') else 0,
+        1 if data.get('is_distributed') else 0,
         data.get('status', 'Good'), data.get('place', ''), now, user_id
     )
 

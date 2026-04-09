@@ -31,6 +31,7 @@ def init_db():
             model TEXT NOT NULL,
             connector TEXT NOT NULL CHECK(connector IN ('USB-C','micro-USB','lightning')),
             is_engraved INTEGER DEFAULT 0,
+            is_distributed INTEGER DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'Good' CHECK(status IN ('Good','Broken')),
             place TEXT,
             created_at TEXT DEFAULT (datetime('now')),

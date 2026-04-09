@@ -1,6 +1,6 @@
 class Device:
     def __init__(self, id, internal_barcode, device_type, brand, model, connector,
-                 is_engraved, status, place, created_at=None, created_by=None,
+                 is_engraved, is_distributed, status, place, created_at=None, created_by=None,
                  updated_at=None, updated_by=None, creator=None, updater=None):
         self.id = id
         self.internal_barcode = internal_barcode
@@ -9,6 +9,7 @@ class Device:
         self.model = model
         self.connector = connector
         self.is_engraved = bool(is_engraved)
+        self.is_distributed = bool(is_distributed)
         self.status = status
         self.place = place
         self.created_at = created_at
@@ -29,6 +30,7 @@ class Device:
             model=d.get('model'),
             connector=d.get('connector'),
             is_engraved=d.get('is_engraved', 0),
+            is_distributed=d.get('is_distributed', 0),
             status=d.get('status', 'Good'),
             place=d.get('place', ''),
             created_at=d.get('created_at'),
@@ -48,6 +50,7 @@ class Device:
             'model': self.model,
             'connector': self.connector,
             'is_engraved': self.is_engraved,
+            'is_distributed': self.is_distributed,
             'status': self.status,
             'place': self.place,
             'created_at': self.created_at,
