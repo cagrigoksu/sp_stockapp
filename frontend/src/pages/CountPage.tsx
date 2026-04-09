@@ -261,7 +261,6 @@ export default function CountPage({ embedded = false }: { embedded?: boolean }) 
             </div>
           </div>
 
-          {/* ── Right: Scanner + Summary ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Scanner */}
             <div style={scannerBox}>
@@ -291,7 +290,7 @@ export default function CountPage({ embedded = false }: { embedded?: boolean }) 
 
             {/* Quick Count Summary */}
             <div style={card}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1a237e', marginBottom: 10 }}>
+              <div style={{  fontFamily: 'Fira Sans', fontWeight: 700, fontSize: '0.95rem', color: '#1a237e', marginBottom: 10 }}>
                 Quick Count Summary
               </div>
               <div style={muted}>
@@ -324,7 +323,7 @@ const navDivider: React.CSSProperties = { width: 1, height: 20, background: 'rgb
 const navUser: React.CSSProperties = { color: 'rgba(255,255,255,0.75)', fontSize: '0.88rem' }
 
 const body: React.CSSProperties = { padding: '1.75rem 2rem' }
-const heading: React.CSSProperties = { fontWeight: 700, color: '#1a237e', marginBottom: '1.25rem', fontSize: '1.3rem' }
+const heading: React.CSSProperties = { fontWeight: 700, color: '#1a237e', marginBottom: '1.25rem', fontSize: '1.3rem',  fontFamily: 'Fira Sans' }
 
 const layout: React.CSSProperties = {
   display: 'grid',
@@ -346,15 +345,18 @@ const cardTitle: React.CSSProperties = { fontWeight: 700, fontSize: '0.95rem', c
 const sessionCard: React.CSSProperties = {
   border: '1.5px solid #e8ecf2', borderRadius: 10,
   padding: '0.75rem 0.9rem', background: '#fafbff',
+  fontFamily: 'Fira Sans'
 }
 const doneBadge: React.CSSProperties = {
   background: '#e0e0e0', color: '#666', borderRadius: 20,
   padding: '0.2rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
+   fontFamily: 'Fira Sans'
 }
 const completeBtn: React.CSSProperties = {
   background: '#e8f5e9', color: '#2e7d32', border: 'none',
   borderRadius: 8, padding: '0.25rem 0.65rem', cursor: 'pointer',
   fontWeight: 700, fontSize: '0.9rem',
+  fontFamily: 'Fira Sans'
 }
 
 const scannerBox: React.CSSProperties = {
@@ -363,6 +365,7 @@ const scannerBox: React.CSSProperties = {
 const scannerLabel: React.CSSProperties = {
   color: 'rgba(255,255,255,0.85)', fontWeight: 700,
   fontSize: '0.92rem', marginBottom: '0.9rem',
+  fontFamily: 'Fira Sans'
 }
 const barcodeInput: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -395,7 +398,7 @@ const typePill: React.CSSProperties = {
   borderRadius: 20, padding: '0.1rem 0.55rem',
   fontSize: '0.75rem', fontWeight: 700,
 }
-const muted: React.CSSProperties = { color: '#999', fontSize: '0.88rem' }
+const muted: React.CSSProperties = {  fontFamily: 'Fira Sans', color: '#999', fontSize: '0.88rem' }
 
 // Modal
 const overlay: React.CSSProperties = {

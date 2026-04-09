@@ -4,7 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import client from '../api/client'
 import StockPage from './StockPage'
 import CountPage from './CountPage'
-import type { ReactNode } from 'react'
+
+//TODO: in overview, show comparison dist. vs not distributed
+//TODO: in overview analytics, exclude distributed
 
 interface Device {
   id: number
@@ -14,6 +16,7 @@ interface Device {
   model: string
   connector: string
   is_engraved: number
+  is_distributed: number
   status: string
   place: string
 }
@@ -33,6 +36,7 @@ interface Stats {
   androidEngravedTablets: number
   ipadosNotEngravedTablets: number
   androidNotEngravedTablets: number
+  distributedDevices: number
 }
 
 const isApple = (brand: string) => brand.trim().toLowerCase() === 'apple'
@@ -46,6 +50,7 @@ function computeStats(devices: Device[]): Stats {
   const EngravedTablets = tablets.filter(d => d.is_engraved)
   const NotEngravedPhones = phones.filter(d => !d.is_engraved)
   const NotEngravedTablets = tablets.filter(d => !d.is_engraved)
+  const DistributedDevices = devices.filter(d => d.is_distributed)
   return {
     phones: phones.length,
     tablets: tablets.length,
@@ -63,6 +68,7 @@ function computeStats(devices: Device[]): Stats {
     androidNotEngravedPhones: NotEngravedPhones.filter(d => !isApple(d.brand)).length,
     ipadosNotEngravedTablets: NotEngravedTablets.filter(d => isApple(d.brand)).length,
     androidNotEngravedTablets: NotEngravedTablets.filter(d => !isApple(d.brand)).length,
+    distributedDevices: DistributedDevices.length
   }
 }
 
@@ -169,6 +175,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      {/* dashboard */}
       {activeTab === 'overview' && (
         <div style={body}>
 
@@ -290,15 +297,17 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* devices */}
       {activeTab === 'devices' && (
         <StockPage embedded />
       )}
 
+      {/* count */}
       {activeTab === 'count' && (
         <CountPage embedded />
       )}
 
-      {/* Report tab */}
+      {/* report */}
       {activeTab === 'report' && (
         <div style={body}>
           <h2 style={heading}>Real-Time Status Report</h2>
@@ -366,10 +375,10 @@ export default function DashboardPage() {
 
 const page: React.CSSProperties = { minHeight: '100vh', background: '#f0f4f8' }
 const nav: React.CSSProperties = { background: '#1a237e', padding: '0.85rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
-const brand: React.CSSProperties = { color: '#fff', fontWeight: 700, fontSize: '1.2rem' }
+const brand: React.CSSProperties = { color: '#fff', fontWeight: 700, fontSize: '1.2rem', fontFamily: 'Fira Sans'}
 const divider: React.CSSProperties = { width: 1, height: 20, background: 'rgba(255,255,255,0.3)' }
-const userName: React.CSSProperties = { color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }
-const navBtn: React.CSSProperties = { background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', borderRadius: 6, padding: '0.3rem 0.8rem', cursor: 'pointer', fontSize: '0.9rem' }
+const userName: React.CSSProperties = {  fontFamily: 'Fira Sans',color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }
+const navBtn: React.CSSProperties = {  fontFamily: 'Fira Sans', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', borderRadius: 6, padding: '0.3rem 0.8rem', cursor: 'pointer', fontSize: '0.9rem' }
 
 const tabBar: React.CSSProperties = { display: 'flex', gap: 4, padding: '0 1.5rem', borderBottom: '2px solid #dde3ed', background: '#fff', position: 'sticky', top: 0, zIndex: 10 }
 const tabBtn = (active: boolean): React.CSSProperties => ({
@@ -383,13 +392,14 @@ const tabBtn = (active: boolean): React.CSSProperties => ({
   fontSize: '0.92rem',
   marginBottom: -2,
   transition: 'color 0.15s',
+  fontFamily: 'Fira Sans'
 })
 
-const body: React.CSSProperties = { padding: '2rem' }
+const body: React.CSSProperties = { padding: '2rem', fontFamily: 'Fira Sans' }
 const heading: React.CSSProperties = { fontWeight: 700, color: '#1a237e', marginBottom: '0.25rem', fontSize: '1.3rem' }
 const sectionHeading: React.CSSProperties = { fontWeight: 700, color: '#1a237e', fontSize: '1rem', margin: '2rem 0 1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }
 
-const statCard: React.CSSProperties = { background: '#fff', borderRadius: 14, padding: '1.25rem 1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }
+const statCard: React.CSSProperties = { background: '#fff', borderRadius: 14, padding: '1.25rem 1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', fontFamily: 'Fira Sans' }
 const statCardTitle: React.CSSProperties = { fontWeight: 700, fontSize: '0.88rem', color: '#555', letterSpacing: '0.05em', marginBottom: '1rem' }
 
 const barTrack: React.CSSProperties = { display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', background: '#f0f2f7' }

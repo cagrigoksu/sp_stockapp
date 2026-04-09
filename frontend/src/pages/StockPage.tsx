@@ -13,6 +13,7 @@ interface Device {
   model: string
   connector: 'USB-C' | 'micro-USB' | 'lightning'
   is_engraved: number
+  is_distributed: number
   status: 'Good' | 'Broken'
   place: string
   creator?: string
@@ -44,7 +45,7 @@ const STATUSES = ['Good', 'Broken'] as const
 type CsvImportType = 'device' | 'charger' | 'cable'
 
 const CSV_COLUMN_INFO: Record<CsvImportType, string> = {
-  device: 'internal_barcode (optional), device_type, brand, model, connector, is_engraved, status, place',
+  device: 'internal_barcode (optional), device_type, brand, model, connector, is_engraved, is_distributed, status, place',
   charger: 'barcode, charger_type, place',
   cable: 'barcode, cable_type, place',
 }
@@ -212,10 +213,9 @@ function CsvImportModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   )
 }
 
-// ─── Device Modals ────────────────────────────────────────────────────────────
 
 function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ device_type: 'phone', brand: '', model: '', connector: 'USB-C', is_engraved: false, status: 'Good', place: '', count: '1', bulk: false })
+  const [form, setForm] = useState({ device_type: 'phone', brand: '', model: '', connector: 'USB-C', is_engraved: false, is_distributed:false, status: 'Good', place: '', count: '1', bulk: false })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -226,9 +226,9 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     setLoading(true)
     try {
       if (form.bulk && parseInt(form.count) > 1) {
-        await client.post('/api/device/bulk', { ...form, count: parseInt(form.count), is_engraved: form.is_engraved ? 1 : 0 })
+        await client.post('/api/device/bulk', { ...form, count: parseInt(form.count), is_engraved: form.is_engraved ? 1 : 0, is_distributed: form.is_distributed? 1: 0 })
       } else {
-        await client.post('/api/device', { ...form, is_engraved: form.is_engraved ? 1 : 0 })
+        await client.post('/api/device', { ...form, is_engraved: form.is_engraved ? 1 : 0, is_distributed: form.is_distributed? 1: 0})
       }
       onSaved(); onClose()
     } catch (e: any) {
@@ -262,9 +262,13 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           <input type="checkbox" checked={form.is_engraved} onChange={e => set('is_engraved', e.target.checked)} /> Engraved
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
+          <input type="checkbox" checked={form.is_distributed} onChange={e => set('is_distributed', e.target.checked)} /> Distributed
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
           <input type="checkbox" checked={form.bulk} onChange={e => set('bulk', e.target.checked)} /> Bulk add
         </label>
       </div>
+
       {form.bulk && (
         <Field label="Count"><input style={inputStyle} type="number" min={1} max={500} value={form.count} onChange={e => set('count', e.target.value)} /></Field>
       )}
@@ -276,7 +280,7 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 }
 
 function DeviceEditModal({ device, onClose, onSaved }: { device: Device; onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ brand: device.brand, model: device.model, connector: device.connector, is_engraved: !!device.is_engraved, status: device.status, place: device.place || '' })
+  const [form, setForm] = useState({ brand: device.brand, model: device.model, connector: device.connector, is_engraved: !!device.is_engraved, is_distributed: !!device.is_distributed, status: device.status, place: device.place || '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -285,7 +289,7 @@ function DeviceEditModal({ device, onClose, onSaved }: { device: Device; onClose
     setError('')
     setLoading(true)
     try {
-      await client.put(`/api/device/${device.id}`, { ...form, is_engraved: form.is_engraved ? 1 : 0 })
+      await client.put(`/api/device/${device.id}`, { ...form, is_engraved: form.is_engraved ? 1 : 0, is_distributed: form.is_distributed ? 1:0})
       onSaved(); onClose()
     } catch (e: any) {
       setError(e.response?.data?.error || 'Failed to update.')
@@ -311,6 +315,10 @@ function DeviceEditModal({ device, onClose, onSaved }: { device: Device; onClose
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}>
         <input type="checkbox" checked={form.is_engraved} onChange={e => set('is_engraved', e.target.checked)} /> Engraved
       </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}>
+        <input type="checkbox" checked={form.is_distributed} onChange={e => set('is_distributed', e.target.checked)} /> Distributed
+      </label>
+
       <button style={btnPrimary} onClick={handleSubmit} disabled={loading}>{loading ? 'Saving…' : 'Save Changes'}</button>
     </Modal>
   )
@@ -321,23 +329,30 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editDevice, setEditDevice] = useState<Device | null>(null)
-  const [filters, setFilters] = useState({ barcode: '', type: '', brand: '', model: '', connector: '', status: '', place: '', is_engraved: '' })
+  const [filters, setFilters] = useState({ barcode: '', type: '', brand: '', model: '', connector: '', status: '', place: '', is_engraved: '', is_distributed:''})
   const setFilter = (k: string, v: string) => setFilters(f => ({ ...f, [k]: v }))
 
   const fetchDevices = useCallback(async () => {
     setLoading(true)
     try {
-      const { is_engraved: _ie, ...serverFilters } = filters
-      const params = Object.fromEntries(Object.entries(serverFilters).filter(([, v]) => v !== ''))
+      const params: any = Object.fromEntries(
+        Object.entries(filters).filter(([, v]) => v !== '')
+      )
+
+      if (params.is_engraved !== undefined) {
+        params.engraved = params.is_engraved
+        delete params.is_engraved
+      }
+      if (params.is_distributed !== undefined) {
+        params.distributed = params.is_distributed
+        delete params.is_distributed
+      }
       const res = await client.get('/api/stock', { params })
       setDevices(res.data.devices)
     } finally { setLoading(false) }
   }, [filters])
 
-  const visibleDevices = filters.is_engraved === ''
-    ? devices
-    : devices.filter(d => filters.is_engraved === '1' ? d.is_engraved : !d.is_engraved)
-
+  const visibleDevices = devices
   useEffect(() => { fetchDevices() }, [fetchDevices])
 
   const handleDelete = async (id: number, barcode: string) => {
@@ -368,10 +383,15 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
             {STATUSES.map(s => <option key={s}>{s}</option>)}
           </select>
           <select style={filterInput} value={filters.is_engraved} onChange={e => setFilter('is_engraved', e.target.value)}>
-            <option value="">All (engraved)</option>
+            <option value="">Is Engraved</option>
             <option value="1">Engraved</option>
             <option value="0">Not engraved</option>
           </select>
+          <select style={filterInput} value={filters.is_distributed} onChange={e => setFilter('is_distributed', e.target.value)}>
+            <option value="">Is Distributed</option>
+            <option value="1">Distributed</option>
+            <option value="0">Not distributed</option>
+          </select>          
           <input style={filterInput} placeholder="Place" value={filters.place} onChange={e => setFilter('place', e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -382,7 +402,7 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
       <div style={tableWrap}>
         {loading ? <div style={emptyMsg}>Loading…</div> : devices.length === 0 ? <div style={emptyMsg}>No devices found.</div> : (
           <table style={tbl}>
-            <thead><tr>{['Barcode', 'Type', 'Brand', 'Model', 'Connector', 'Engraved', 'Status', 'Place', 'Actions'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+            <thead><tr>{['Barcode', 'Type', 'Brand', 'Model', 'Connector', 'Engraved', 'Distributed', 'Status', 'Place', 'Actions'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
               {visibleDevices.map(d => (
                 <tr key={d.id} style={tr}>
@@ -392,6 +412,7 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
                   <td style={td}>{d.model}</td>
                   <td style={td}>{d.connector}</td>
                   <td style={{ ...td, textAlign: 'center' }}>{d.is_engraved ? '✓' : '—'}</td>
+                  <td style={{ ...td, textAlign: 'center' }}>{d.is_distributed ? '✓' : '—'}</td>
                   <td style={td}><span style={badge(d.status === 'Good' ? '#e8f5e9' : '#fdecea', d.status === 'Good' ? '#2e7d32' : '#c62828')}>{d.status}</span></td>
                   <td style={td}>{d.place || '—'}</td>
                   <td style={td}>
@@ -411,7 +432,6 @@ function DevicesTab({ onCsvImport }: { onCsvImport: () => void }) {
   )
 }
 
-// ─── Charger Modals ───────────────────────────────────────────────────────────
 
 function ChargerAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({ charger_type: 'USB-A', barcode: '', place: '', count: '1' })
@@ -545,8 +565,6 @@ function ChargersTab({ onCsvImport }: { onCsvImport: () => void }) {
     </div>
   )
 }
-
-// ─── Cable Modals ─────────────────────────────────────────────────────────────
 
 function CableAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({ cable_type: 'USB-C to USB-C', barcode: '', place: '', count: '1' })
@@ -691,7 +709,7 @@ function CablesTab({ onCsvImport }: { onCsvImport: () => void }) {
   )
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// main
 
 type Tab = 'devices' | 'chargers' | 'cables'
 
@@ -699,7 +717,7 @@ export default function StockPage({ embedded }: Props) {
   const [tab, setTab] = useState<Tab>('devices')
   const [showCsvImport, setShowCsvImport] = useState(false)
 
-  // Refresh trigger: passed down so CSV import can reload the active tab's data
+  // refresh trigger, passed down so CSV import can reload the active tab's data
   const [refreshKey, setRefreshKey] = useState(0)
   const handleCsvSaved = () => setRefreshKey(k => k + 1)
 
@@ -730,7 +748,7 @@ export default function StockPage({ embedded }: Props) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const page: React.CSSProperties = { background: '#f0f4f8', minHeight: '100%' }
-const tabBar: React.CSSProperties = { display: 'flex', gap: 4, padding: '1.2rem 1.5rem 0', borderBottom: '2px solid #e0e7ef', background: '#fff', position: 'sticky', top: 0, zIndex: 10 }
+const tabBar: React.CSSProperties = {  display: 'flex', gap: 4, padding: '1.2rem 1.5rem 0', borderBottom: '2px solid #e0e7ef', background: '#fff', position: 'sticky', top: 0, zIndex: 10 }
 const tabBtn = (active: boolean): React.CSSProperties => ({
   padding: '0.55rem 1.2rem', border: 'none', background: active ? '#1a237e' : 'transparent',
   color: active ? '#fff' : '#555', borderRadius: '8px 8px 0 0', cursor: 'pointer',
@@ -740,14 +758,14 @@ const tabBtn = (active: boolean): React.CSSProperties => ({
 const tabContent: React.CSSProperties = { padding: '1.5rem' }
 const toolbar: React.CSSProperties = { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }
 const filterRow: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }
-const filterInput: React.CSSProperties = { padding: '0.5rem 0.75rem', border: '1.5px solid #dde3ed', borderRadius: 8, fontSize: '0.85rem', background: '#fff', outline: 'none', minWidth: 100 }
+const filterInput: React.CSSProperties = { padding: '0.5rem 0.75rem', border: '1.5px solid #dde3ed', borderRadius: 8, fontSize: '0.85rem', background: '#fff', outline: 'none', maxWidth: 120 }
 const tableWrap: React.CSSProperties = { background: '#fff', borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'auto' }
 const tbl: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }
 const th: React.CSSProperties = { padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888', borderBottom: '2px solid #eef0f5', whiteSpace: 'nowrap' }
 const td: React.CSSProperties = { padding: '0.7rem 1rem', borderBottom: '1px solid #f0f2f7', color: '#333', verticalAlign: 'middle' }
 const tr: React.CSSProperties = {}
 const emptyMsg: React.CSSProperties = { padding: '3rem', textAlign: 'center', color: '#aaa', fontSize: '0.95rem' }
-const countLine: React.CSSProperties = { padding: '0.6rem 0.5rem 0', fontSize: '0.8rem', color: '#999' }
+const countLine: React.CSSProperties = {  fontFamily: 'Fira Sans', padding: '0.6rem 0.5rem 0', fontSize: '0.8rem', color: '#999', fontWeight:700}
 const code: React.CSSProperties = { fontFamily: 'monospace', background: '#f0f2f7', padding: '0.15rem 0.4rem', borderRadius: 4, fontSize: '0.82rem' }
 const badge = (bg: string, fg: string): React.CSSProperties => ({ background: bg, color: fg, padding: '0.2rem 0.55rem', borderRadius: 20, fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap' })
 const errStyle: React.CSSProperties = { background: '#fdecea', color: '#c62828', border: '1px solid #f5c6cb', borderRadius: 8, padding: '0.65rem', marginBottom: '1rem', fontSize: '0.88rem' }
