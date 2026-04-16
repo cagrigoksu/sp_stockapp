@@ -19,7 +19,7 @@ def generate_barcode(device_type):
                 max_n = n
         except:
             pass
-    return f"{today}{prefix}{max_n + 1}"
+    return f"{today}{prefix}{max_n + 1:02d}"
 
 def validate_barcode_format(barcode, device_type):
     barcode = barcode.strip()
@@ -81,6 +81,8 @@ def update_device(item_id, data, user_id):
         item_id, data['brand'], data['model'], data['connector'],
         1 if data.get('is_engraved') else 0,
         1 if data.get('is_distributed') else 0,
+        data.get('recipient_id'),
+        data.get('distribution_date'),
         data.get('status', 'Good'), data.get('place', ''), now, user_id
     )
 

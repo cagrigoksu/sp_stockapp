@@ -135,11 +135,13 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashTab>('overview')
 
   useEffect(() => {
+    if (activeTab !== 'overview' && activeTab !== 'report') return
+    setLoading(true)
     client.get('/api/stock')
       .then(res => setDevices(res.data.devices ?? []))
       .catch(() => setDevices([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [activeTab])
 
   const s = computeStats(devices)
 
@@ -175,7 +177,6 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* dashboard */}
       {activeTab === 'overview' && (
         <div style={body}>
 
@@ -184,7 +185,6 @@ export default function DashboardPage() {
             Welcome, <strong>{user?.user_name}</strong>.
           </p>
 
-          {/* Stats */}
           <h3 style={sectionHeading}>Device Overview</h3>
 
           <div style={fullRow}>
@@ -297,17 +297,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* devices */}
       {activeTab === 'devices' && (
         <StockPage embedded />
       )}
 
-      {/* count */}
       {activeTab === 'count' && (
         <CountPage embedded />
       )}
 
-      {/* report */}
       {activeTab === 'report' && (
         <div style={body}>
           <h2 style={heading}>Real-Time Status Report</h2>
@@ -332,8 +329,8 @@ export default function DashboardPage() {
                 <tbody>
                   {(() => {
                     const isAppleBrand = (b: string) => b.trim().toLowerCase() === 'apple'
-                    const phones = devices.filter(d => d.device_type === 'phone')
-                    const tablets = devices.filter(d => d.device_type === 'tablet')
+                    const phones = devices.filter(d => d.device_type === 'phone' && !d.is_distributed)
+                    const tablets = devices.filter(d => d.device_type === 'tablet' && !d.is_distributed)
 
                     const rows = [
                       { label: 'SP Android', rfd: phones.filter(d => d.is_engraved && !isAppleBrand(d.brand)).length, nonRfd: phones.filter(d => !d.is_engraved && !isAppleBrand(d.brand)).length },
@@ -377,8 +374,8 @@ const page: React.CSSProperties = { minHeight: '100vh', background: '#f0f4f8' }
 const nav: React.CSSProperties = { background: '#1a237e', padding: '0.85rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
 const brand: React.CSSProperties = { color: '#fff', fontWeight: 700, fontSize: '1.2rem', fontFamily: 'Fira Sans'}
 const divider: React.CSSProperties = { width: 1, height: 20, background: 'rgba(255,255,255,0.3)' }
-const userName: React.CSSProperties = {  fontFamily: 'Fira Sans',color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }
-const navBtn: React.CSSProperties = {  fontFamily: 'Fira Sans', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', borderRadius: 6, padding: '0.3rem 0.8rem', cursor: 'pointer', fontSize: '0.9rem' }
+const userName: React.CSSProperties = { fontFamily: 'Fira Sans', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }
+const navBtn: React.CSSProperties = { fontFamily: 'Fira Sans', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', borderRadius: 6, padding: '0.3rem 0.8rem', cursor: 'pointer', fontSize: '0.9rem' }
 
 const tabBar: React.CSSProperties = { display: 'flex', gap: 4, padding: '0 1.5rem', borderBottom: '2px solid #dde3ed', background: '#fff', position: 'sticky', top: 0, zIndex: 10 }
 const tabBtn = (active: boolean): React.CSSProperties => ({
@@ -428,4 +425,3 @@ const rptThMain: React.CSSProperties = { padding: '0.75rem 1.25rem', textAlign: 
 const rptThSub: React.CSSProperties = { padding: '0.55rem 1.25rem', textAlign: 'center', fontWeight: 600, fontSize: '0.78rem', borderBottom: '2px solid #dde3ed' }
 const rptTdLabel: React.CSSProperties = { padding: '0.75rem 1.25rem', fontWeight: 600, color: '#333', fontSize: '0.88rem', borderBottom: '1px solid #f0f2f7', whiteSpace: 'nowrap' }
 const rptTd: React.CSSProperties = { padding: '0.75rem 1.25rem', textAlign: 'center', color: '#333', fontSize: '0.9rem', borderBottom: '1px solid #f0f2f7' }
-

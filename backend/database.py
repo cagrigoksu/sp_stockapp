@@ -32,6 +32,8 @@ def init_db():
             connector TEXT NOT NULL CHECK(connector IN ('USB-C','micro-USB','lightning')),
             is_engraved INTEGER DEFAULT 0,
             is_distributed INTEGER DEFAULT 0,
+            recipient_id INTEGER,
+            distribution_date TEXT,
             status TEXT NOT NULL DEFAULT 'Good' CHECK(status IN ('Good','Broken')),
             place TEXT,
             created_at TEXT DEFAULT (datetime('now')),

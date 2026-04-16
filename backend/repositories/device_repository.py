@@ -72,11 +72,11 @@ class DeviceRepository:
                               VALUES(?,?,?,?,?,?,?,?,?,?,?)""", r)
             db.commit()
 
-    def update(self, item_id, brand, model, connector, is_engraved, is_distributed, status, place, now, user_id):
+    def update(self, item_id, brand, model, connector, is_engraved, is_distributed, recipient_id, distribution_date, status, place, now, user_id):
         with get_db() as db:
-            db.execute("""UPDATE devices SET brand=?,model=?,connector=?,is_engraved=?,is_distributed=?, status=?,place=?,updated_at=?,updated_by=?
+            db.execute("""UPDATE devices SET brand=?,model=?,connector=?,is_engraved=?,is_distributed=?, recipient_id=?, distribution_date=?, status=?,place=?,updated_at=?,updated_by=?
                           WHERE id=?""",
-                       (brand, model, connector, is_engraved,is_distributed, status, place, now, user_id, item_id))
+                       (brand, model, connector, is_engraved, is_distributed, recipient_id, distribution_date, status, place, now, user_id, item_id))
             db.commit()
 
     def delete(self, item_id):

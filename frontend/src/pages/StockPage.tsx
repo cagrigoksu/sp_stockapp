@@ -14,6 +14,8 @@ interface Device {
   connector: 'USB-C' | 'micro-USB' | 'lightning'
   is_engraved: number
   is_distributed: number
+  recipient_id: number
+  distribution_date: string
   status: 'Good' | 'Broken'
   place: string
   creator?: string
@@ -215,7 +217,7 @@ function CsvImportModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
 
 function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ device_type: 'phone', brand: '', model: '', connector: 'USB-C', is_engraved: false, is_distributed:false, status: 'Good', place: '', count: '1', bulk: false })
+  const [form, setForm] = useState({ device_type: 'phone', brand: '', model: '', connector: 'USB-C', is_engraved: false, status: 'Good', place: '', count: '1', bulk: false })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -226,9 +228,9 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     setLoading(true)
     try {
       if (form.bulk && parseInt(form.count) > 1) {
-        await client.post('/api/device/bulk', { ...form, count: parseInt(form.count), is_engraved: form.is_engraved ? 1 : 0, is_distributed: form.is_distributed? 1: 0 })
+        await client.post('/api/device/bulk', { ...form, count: parseInt(form.count), is_engraved: form.is_engraved ? 1 : 0})
       } else {
-        await client.post('/api/device', { ...form, is_engraved: form.is_engraved ? 1 : 0, is_distributed: form.is_distributed? 1: 0})
+        await client.post('/api/device', { ...form, is_engraved: form.is_engraved ? 1 : 0})
       }
       onSaved(); onClose()
     } catch (e: any) {
@@ -262,9 +264,6 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           <input type="checkbox" checked={form.is_engraved} onChange={e => set('is_engraved', e.target.checked)} /> Engraved
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
-          <input type="checkbox" checked={form.is_distributed} onChange={e => set('is_distributed', e.target.checked)} /> Distributed
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem' }}>
           <input type="checkbox" checked={form.bulk} onChange={e => set('bulk', e.target.checked)} /> Bulk add
         </label>
       </div>
@@ -280,7 +279,7 @@ function DeviceAddModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 }
 
 function DeviceEditModal({ device, onClose, onSaved }: { device: Device; onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ brand: device.brand, model: device.model, connector: device.connector, is_engraved: !!device.is_engraved, is_distributed: !!device.is_distributed, status: device.status, place: device.place || '' })
+  const [form, setForm] = useState({ brand: device.brand, model: device.model, connector: device.connector, is_engraved: !!device.is_engraved, is_distributed: !!device.is_distributed, recipient_id: device.recipient_id || '', distribution_date:device.distribution_date || '', status: device.status, place: device.place || '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -318,6 +317,28 @@ function DeviceEditModal({ device, onClose, onSaved }: { device: Device; onClose
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.9rem', marginBottom: '1rem' }}>
         <input type="checkbox" checked={form.is_distributed} onChange={e => set('is_distributed', e.target.checked)} /> Distributed
       </label>
+
+      {form.is_distributed && (
+        <>
+          <Field label="Recipient ID">
+            <input
+              style={inputStyle}
+              placeholder="Enter recipient ID"
+              value={form.recipient_id}
+              onChange={e => set('recipient_id', e.target.value)}
+            />
+          </Field>
+
+          <Field label="Distribution Date">
+            <input
+              type="date"
+              style={inputStyle}
+              value={form.distribution_date}
+              onChange={e => set('distribution_date', e.target.value)}
+            />
+          </Field>
+        </>
+      )}
 
       <button style={btnPrimary} onClick={handleSubmit} disabled={loading}>{loading ? 'Saving…' : 'Save Changes'}</button>
     </Modal>
